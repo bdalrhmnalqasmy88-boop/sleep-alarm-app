@@ -1,0 +1,765 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>منبه دورات النوم</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fcd34d' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z'/%3E%3C/svg%3E" />
+<style>
+:root{color-scheme:dark}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:#05060f;color:#e3e9ff;font-family:'Cairo','Tahoma','Segoe UI',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+
+/* ===== Layout ===== */
+.app{position:relative;min-height:100vh;z-index:10;max-width:672px;margin:0 auto;padding:32px 20px 40px;display:flex;flex-direction:column;gap:20px}
+.main{flex:1;display:flex;flex-direction:column;gap:20px}
+
+/* ===== Starfield ===== */
+.starfield{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+.starfield .bg{position:absolute;inset:0;background:linear-gradient(to bottom,#05060f,#0a0c1b,#05060f)}
+.starfield .nebula1{position:absolute;top:-25%;right:25%;width:600px;height:600px;border-radius:50%;background:rgba(43,48,136,0.2);filter:blur(120px)}
+.starfield .nebula2{position:absolute;bottom:0;left:-25%;width:500px;height:500px;border-radius:50%;background:rgba(13,148,136,0.1);filter:blur(120px)}
+.star{position:absolute;border-radius:50%;background:#e3e9ff;animation:twinkle 3s ease-in-out infinite}
+
+@keyframes twinkle{0%,100%{opacity:.2}50%{opacity:1}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes pulseRing{0%{transform:scale(.95);opacity:.7}70%{transform:scale(1.3);opacity:0}100%{transform:scale(1.3);opacity:0}}
+@keyframes breathe{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.05);opacity:1}}
+
+/* ===== Header ===== */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.header-left{display:flex;align-items:center;gap:12px}
+.moon-icon{width:44px;height:44px;animation:float 6s ease-in-out infinite}
+.moon-icon svg{width:100%;height:100%;filter:drop-shadow(0 0 25px rgba(251,191,36,0.45))}
+.header h1{font-size:20px;font-weight:700;color:#f3f6ff}
+.header p{font-size:12px;color:rgba(163,179,255,0.7)}
+.header-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.clock-time{font-family:monospace;font-size:24px;font-weight:600;color:#e3e9ff;font-variant-numeric:tabular-nums}
+.clock-date{font-size:11px;color:rgba(163,179,255,0.6)}
+
+/* ===== Cards ===== */
+.card{border-radius:16px;border:1px solid rgba(26,31,61,0.5);background:rgba(17,20,43,0.4);backdrop-filter:blur(12px);padding:24px}
+.card-glow{box-shadow:0 0 40px -8px rgba(122,134,240,0.45)}
+.label{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;color:#c8d3ff;margin-bottom:12px}
+.label svg{width:20px;height:20px}
+
+/* ===== Time Input ===== */
+.time-input{width:100%;border-radius:12px;border:1px solid #272e54;background:rgba(10,12,27,0.6);padding:16px;text-align:center;font-size:30px;font-weight:700;color:#f3f6ff;outline:none;transition:border-color .3s,box-shadow .3s;color-scheme:dark}
+.time-input:focus{border-color:#5a6bf0;box-shadow:0 0 40px -8px rgba(122,134,240,0.45)}
+.time-input::-webkit-calendar-picker-indicator{filter:invert(1) opacity(0.7);cursor:pointer}
+.hint{margin-top:12px;font-size:12px;color:rgba(163,179,255,0.6)}
+
+/* ===== Section Title ===== */
+.section-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:#c8d3ff;margin-bottom:12px}
+.section-title svg{width:16px;height:16px}
+
+/* ===== Cycle Grid ===== */
+.cycle-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:480px){.cycle-grid{grid-template-columns:repeat(2,1fr)}}
+.cycle-btn{position:relative;overflow:hidden;border-radius:16px;border:1px solid rgba(26,31,61,0.5);background:rgba(17,20,43,0.3);padding:16px;text-align:right;cursor:pointer;transition:border-color .3s,background .3s;color:inherit;font-family:inherit}
+.cycle-btn:hover{border-color:rgba(90,107,240,0.5);background:rgba(26,31,61,0.4)}
+.cycle-btn.selected{border-color:#5eead4;background:rgba(20,184,166,0.1);box-shadow:0 0 40px -8px rgba(94,234,212,0.5)}
+.cycle-btn.nearest{border-color:rgba(163,179,255,0.6);background:rgba(51,63,171,0.2)}
+.cycle-btn.nearest.selected{border-color:#5eead4;background:rgba(20,184,166,0.1)}
+.nearest-badge{position:absolute;left:8px;top:8px;border-radius:999px;background:rgba(90,107,240,0.2);padding:2px 8px;font-size:10px;color:#c8d3ff}
+.cycle-time{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.cycle-time svg{width:16px;height:16px;color:#a3b3ff}
+.cycle-time .time{font-size:18px;font-weight:700;color:#f3f6ff;font-variant-numeric:tabular-nums}
+.cycle-meta{display:flex;justify-content:space-between;font-size:11px;color:rgba(163,179,255,0.7)}
+
+/* ===== Summary ===== */
+.summary-row{display:flex;align-items:center;justify-content:space-between;font-size:14px;margin-bottom:16px}
+.summary-item{display:flex;align-items:center;gap:8px;color:#c8d3ff}
+.summary-item svg{width:16px;height:16px}
+.summary-item .val{font-weight:700;color:#f3f6ff;font-variant-numeric:tabular-nums}
+
+/* ===== Buttons ===== */
+.btn-arm{display:flex;width:100%;align-items:center;justify-content:center;gap:12px;border-radius:12px;background:linear-gradient(to left,#4350d6,#14b8a6);padding:16px;font-size:18px;font-weight:700;color:#fff;border:none;cursor:pointer;transition:transform .3s,box-shadow .3s;box-shadow:0 0 40px -8px rgba(94,234,212,0.5);font-family:inherit}
+.btn-arm:hover{transform:scale(1.02)}
+.btn-arm:active{transform:scale(.95)}
+.btn-arm svg{width:24px;height:24px;transition:transform .3s}
+.btn-arm:hover svg{transform:rotate(12deg)}
+
+.btn-gold{width:100%;border-radius:12px;background:linear-gradient(to left,#f59e0b,#fbbf24);padding:20px;font-size:20px;font-weight:700;color:#05060f;border:none;cursor:pointer;transition:transform .3s;box-shadow:0 0 50px -10px rgba(251,191,36,0.5);font-family:inherit}
+.btn-gold:hover{transform:scale(1.02)}
+.btn-gold:active{transform:scale(.95)}
+
+.btn-cancel{display:flex;align-items:center;gap:8px;border-radius:12px;border:1px solid #272e54;background:rgba(17,20,43,0.5);padding:12px 24px;font-size:14px;color:#c8d3ff;cursor:pointer;transition:background .3s;font-family:inherit;margin:0 auto}
+.btn-cancel:hover{background:rgba(26,31,61,0.5)}
+
+.btn-reset{display:flex;align-items:center;gap:8px;border-radius:12px;background:linear-gradient(to left,#4350d6,#14b8a6);padding:14px 32px;font-weight:700;color:#fff;border:none;cursor:pointer;transition:transform .3s;box-shadow:0 0 40px -8px rgba(94,234,212,0.5);font-family:inherit}
+.btn-reset:hover{transform:scale(1.02)}
+.btn-reset:active{transform:scale(.95)}
+
+/* ===== Pulse Ring ===== */
+.pulse-wrap{position:relative;display:flex;align-items:center;justify-content:center;width:128px;height:128px;margin:16px auto 0}
+.pulse-ring{position:absolute;inset:0;border-radius:50%;background:rgba(20,184,166,0.2);animation:pulseRing 1.8s cubic-bezier(.215,.61,.355,1) infinite}
+.pulse-ring.delay{animation-delay:.4s;inset:8px;background:rgba(20,184,166,0.1)}
+.pulse-core{position:relative;display:flex;align-items:center;justify-content:center;width:96px;height:96px;border-radius:50%;border:1px solid rgba(94,234,212,0.4);background:rgba(17,20,43,0.6);backdrop-filter:blur(12px)}
+.pulse-core svg{width:40px;height:40px;color:#5eead4}
+
+.pulse-wrap-gold{width:160px;height:160px}
+.pulse-ring-gold{background:rgba(251,191,36,0.2)}
+.pulse-ring-gold.delay{animation-delay:.3s;inset:12px;background:rgba(251,191,36,0.1)}
+.pulse-core-gold{width:112px;height:112px;border:1px solid rgba(252,211,77,0.4);background:rgba(17,20,43,0.7)}
+.pulse-core-gold svg{width:64px;height:64px;color:#fcd34d}
+
+/* ===== Countdown ===== */
+.countdown-label{text-align:center;font-size:14px;color:rgba(163,179,255,0.7);margin-top:16px}
+.countdown{text-align:center;font-family:monospace;font-size:36px;font-weight:700;color:#f3f6ff;font-variant-numeric:tabular-nums;margin-top:4px}
+
+/* ===== Info Tiles ===== */
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%}
+.info-tile{display:flex;align-items:center;gap:12px;border-radius:12px;border:1px solid rgba(26,31,61,0.5);background:rgba(17,20,43,0.4);padding:12px 16px;backdrop-filter:blur(4px)}
+.info-icon{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:10px;background:rgba(26,31,61,0.4);color:#a3b3ff}
+.info-icon svg{width:20px;height:20px}
+.info-label{font-size:11px;color:rgba(163,179,255,0.6)}
+.info-value{font-weight:700;color:#f3f6ff;font-variant-numeric:tabular-nums}
+
+/* ===== Status Bar ===== */
+.status-bar{display:flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;border:1px solid rgba(26,31,61,0.5);background:rgba(17,20,43,0.4);padding:12px 16px;font-size:14px;color:#c8d3ff}
+.status-bar svg{width:16px;height:16px;color:#fcd34d}
+
+/* ===== Ringing View ===== */
+.ringing{display:flex;flex-direction:column;align-items:center;gap:24px;padding:24px 0}
+.ringing-title{font-size:24px;font-weight:700;color:#f3f6ff;text-align:center}
+.ringing-sub{text-align:center;font-size:14px;color:rgba(163,179,255,0.7)}
+
+/* ===== Sleeping View ===== */
+.sleeping{display:flex;flex-direction:column;align-items:center;gap:24px;padding:24px 0}
+.sleeping .moon-big{width:112px;height:112px;animation:breathe 4s ease-in-out infinite}
+.sleeping .moon-big svg{width:100%;height:100%;filter:drop-shadow(0 0 25px rgba(251,191,36,0.45))}
+.sleeping-title{font-size:20px;font-weight:700;color:#f3f6ff;text-align:center}
+.sleeping-sub{text-align:center;font-size:14px;color:rgba(163,179,255,0.7)}
+.sleeping-wake{font-size:18px;font-weight:700;color:#fcd34d;text-align:center}
+.sleeping-countdown-card{width:100%;border-radius:16px;border:1px solid rgba(26,31,61,0.5);background:rgba(17,20,43,0.4);padding:24px;text-align:center;backdrop-filter:blur(12px)}
+
+/* ===== Done View ===== */
+.done-view{display:flex;flex-direction:column;align-items:center;gap:24px;padding:32px 0}
+.done-icon{display:flex;align-items:center;justify-content:center;width:112px;height:112px;border-radius:50%;background:rgba(20,184,166,0.15);color:#5eead4;box-shadow:0 0 40px -8px rgba(94,234,212,0.5)}
+.done-icon svg{width:56px;height:56px}
+.done-title{font-size:24px;font-weight:700;color:#f3f6ff;text-align:center}
+.done-sub{font-size:14px;color:rgba(163,179,255,0.7);text-align:center}
+.done-accent{font-size:14px;color:#5eead4;text-align:center}
+
+/* ===== Sound Settings ===== */
+.settings-card{border-radius:16px;border:1px solid rgba(26,31,61,0.5);background:rgba(17,20,43,0.4);backdrop-filter:blur(12px);padding:20px}
+.settings-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:#c8d3ff;margin-bottom:16px}
+.settings-title svg{width:16px;height:16px;color:#5eead4}
+.settings-label{display:block;font-size:12px;color:rgba(163,179,255,0.7);margin-bottom:6px}
+.dropdown{position:relative}
+.dropdown-btn{display:flex;width:100%;align-items:center;justify-content:space-between;border-radius:12px;border:1px solid #272e54;background:rgba(10,12,27,0.6);padding:12px 16px;font-size:14px;color:#f3f6ff;cursor:pointer;outline:none;transition:border-color .3s;font-family:inherit;text-align:right}
+.dropdown-btn:focus{border-color:#5a6bf0}
+.dropdown-btn svg{width:16px;height:16px;color:#a3b3ff;transition:transform .3s}
+.dropdown-btn svg.open{transform:rotate(180deg)}
+.dropdown-menu{position:absolute;z-index:30;margin-top:4px;width:100%;overflow:hidden;border-radius:12px;border:1px solid #272e54;background:#0a0c1b;box-shadow:0 0 40px -8px rgba(122,134,240,0.45)}
+.dropdown-item{display:flex;flex-direction:column;align-items:flex-start;width:100%;padding:12px 16px;text-align:right;border:none;background:transparent;cursor:pointer;transition:background .3s;font-family:inherit;color:inherit}
+.dropdown-item:hover{background:rgba(26,31,61,0.6)}
+.dropdown-item.active{background:rgba(20,184,166,0.1)}
+.dropdown-item .item-label{font-size:14px;font-weight:500;color:#e3e9ff}
+.dropdown-item.active .item-label{color:#5eead4}
+.dropdown-item .item-desc{font-size:11px;color:rgba(163,179,255,0.6)}
+.dropdown-overlay{position:fixed;inset:0;z-index:20}
+
+.btn-preview{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;border-radius:12px;border:1px solid #272e54;background:rgba(10,12,27,0.4);padding:10px 16px;font-size:14px;font-weight:500;color:#c8d3ff;cursor:pointer;transition:background .3s;font-family:inherit;margin-top:12px}
+.btn-preview:hover{background:rgba(26,31,61,0.4)}
+.btn-preview.playing{border-color:#5eead4;background:rgba(20,184,166,0.15);color:#5eead4}
+
+.volume-row{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:rgba(163,179,255,0.7);margin-top:20px;margin-bottom:8px}
+.volume-row svg{width:16px;height:16px}
+.volume-pct{font-family:monospace;font-weight:600;color:#e3e9ff}
+.volume-slider{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:999px;background:linear-gradient(to left,#14b8a6,#5a6bf0);outline:none;cursor:pointer}
+.volume-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;background:#e3e9ff;border:2px solid #14b8a6;box-shadow:0 0 10px rgba(20,184,166,0.5);cursor:pointer;transition:transform .15s}
+.volume-slider::-webkit-slider-thumb:hover{transform:scale(1.2)}
+.volume-slider::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#e3e9ff;border:2px solid #14b8a6;box-shadow:0 0 10px rgba(20,184,166,0.5);cursor:pointer}
+.volume-range-labels{display:flex;justify-content:space-between;font-size:10px;color:rgba(163,179,255,0.4);margin-top:4px}
+
+/* ===== History ===== */
+.history-section{margin-top:32px}
+.history-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:#c8d3ff;margin-bottom:12px}
+.history-title svg{width:16px;height:16px}
+.history-list{display:flex;flex-direction:column;gap:8px}
+.history-item{display:flex;align-items:center;justify-content:space-between;border-radius:12px;border:1px solid rgba(26,31,61,0.6);background:rgba(17,20,43,0.4);padding:12px 16px;backdrop-filter:blur(4px)}
+.history-left{display:flex;align-items:center;gap:12px}
+.history-icon{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;background:rgba(51,63,171,0.3)}
+.history-icon svg{width:16px;height:16px;color:#a3b3ff}
+.history-time{font-size:14px;color:#e3e9ff}
+.history-meta{font-size:11px;color:rgba(163,179,255,0.6)}
+.history-badge{display:flex;align-items:center;gap:4px;font-size:12px}
+.history-badge.done{color:#5eead4}
+.history-badge.done svg{width:14px;height:14px}
+.history-badge.pending{color:rgba(163,179,255,0.5)}
+
+/* ===== Error ===== */
+.error-box{border-radius:12px;border:1px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.1);padding:8px 16px;font-size:14px;color:#fca5a5}
+
+/* ===== Footer ===== */
+.footer{margin-top:40px;text-align:center;font-size:11px;color:rgba(163,179,255,0.4)}
+
+/* ===== Center helper ===== */
+.center{text-align:center}
+.mt-16{margin-top:16px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ===== SVG Icons ===== */
+var ICONS = {
+  moon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>',
+  sunrise: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v8"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="m8 6 4-4 4 4"/><path d="M16 18a4 4 0 0 0-8 0"/></svg>',
+  bed: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>',
+  bell: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 14.192 18 12.229 18 8A6 6 0 0 0 6 8c0 4.228-1.411 6.192-2.738 7.326"/></svg>',
+  bellRing: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 14.192 18 12.229 18 8A6 6 0 0 0 6 8c0 4.228-1.411 6.192-2.738 7.326"/><path d="M22 8h-4"/><path d="M2 8h4"/><path d="M4 4 6 6"/><path d="M20 4l-2 2"/></svg>',
+  alarmClock: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/><path d="M6.383 18.711 5 22"/><path d="m17.617 18.711 19 3.289"/></svg>',
+  checkCircle: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg>',
+  clock: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  rotateCcw: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>',
+  sparkles: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>',
+  star: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.525 2.299a1 1 0 0 1 1.95 0l.701 2.143a1 1 0 0 0 .632.632l2.143.701a1 1 0 0 1 0 1.95l-2.143.701a1 1 0 0 0-.632.632l-.701 2.143a1 1 0 0 1-1.95 0l-.701-2.143a1 1 0 0 0-.632-.632l-2.143-.701a1 1 0 0 1 0-1.95l2.143-.701a1 1 0 0 0 .632-.632l.701-2.143Z"/></svg>',
+  music: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
+  chevronDown: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>',
+  play: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>',
+  square: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/></svg>',
+  volume1: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4.702a.705.705 0 0 0-1.203-.47L6.5 9H4a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h2.5l3.298 4.768A.705.705 0 0 0 11 19.298V4.702Z"/><path d="M16 9a5 5 0 0 1 0 6"/></svg>',
+  volume2: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4.702a.705.705 0 0 0-1.203-.47L6.5 9H4a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h2.5l3.298 4.768A.705.705 0 0 0 11 19.298V4.702Z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.364 18.364a9 9 0 0 0 0-12.728"/></svg>'
+};
+
+/* ===== Constants ===== */
+var CYCLE_MINUTES = 90;
+var MIN_CYCLES = 3;
+var MAX_CYCLES = 6;
+
+var ALARM_SOUNDS = [
+  {id:'high',label:'نغمة عالية',description:'صفير حاد وواضح'},
+  {id:'annoying',label:'نغمة مزعجة',description:'إشارات متناوبة سريعة'},
+  {id:'gradual',label:'استيقاظ تدريجي',description:'صوت يتصاعد بهدوء'},
+  {id:'bell',label:'جرس قوي',description:'رنين عميق متكرر'}
+];
+
+/* ===== Sleep Math ===== */
+function parseTime(v){var p=v.split(':').map(Number);return{h:p[0]||8,m:p[1]||30}}
+function atSameDate(b,h,m){var d=new Date(b);d.setHours(h,m,0,0);return d}
+function formatTimeAr(d){var h=d.getHours();var m=String(d.getMinutes()).padStart(2,'0');var s=h<12?'ص':'م';h=h%12;if(h===0)h=12;return String(h).padStart(2,'0')+':'+m+' '+s}
+function computeCycles(wakeTimeValue,now){
+  var p=parseTime(wakeTimeValue);var wake=atSameDate(now,p.h,p.m);
+  if(wake.getTime()<=now.getTime())wake=new Date(wake.getTime()+86400000);
+  var opts=[];
+  for(var c=MAX_CYCLES;c>=MIN_CYCLES;c--){
+    var bedtime=new Date(wake.getTime()-c*CYCLE_MINUTES*60000);
+    opts.push({cycles:c,bedtime:bedtime,wakeTime:wake,durationMin:c*CYCLE_MINUTES});
+  }
+  return opts;
+}
+function nearestUpcoming(opts,now){
+  var up=opts.filter(function(o){return o.bedtime.getTime()>now.getTime()});
+  if(!up.length)return null;
+  return up.reduce(function(a,b){return (a.bedtime.getTime()-now.getTime())<(b.bedtime.getTime()-now.getTime())?a:b});
+}
+function formatDuration(min){var h=Math.floor(min/60);var m=min%60;if(!h)return m+' دقيقة';if(!m)return h+' ساعة';return h+' ساعة و '+m+' دقيقة'}
+function formatCountdown(ms){
+  if(ms<0)ms=0;var s=Math.floor(ms/1000);
+  var h=Math.floor(s/3600);var m=Math.floor((s%3600)/60);var sec=s%60;
+  return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+}
+
+/* ===== Sound Engine ===== */
+function createCtx(){return new (window.AudioContext||window.webkitAudioContext)()}
+function beep(ctx,freq,vol,start,dur,type){
+  type=type||'sine';
+  var osc=ctx.createOscillator();var gain=ctx.createGain();
+  osc.type=type;osc.frequency.setValueAtTime(freq,start);
+  gain.gain.setValueAtTime(0.0001,start);
+  gain.gain.exponentialRampToValueAtTime(vol,start+0.02);
+  gain.gain.exponentialRampToValueAtTime(vol*0.6,start+dur*0.5);
+  gain.gain.exponentialRampToValueAtTime(0.0001,start+dur);
+  osc.connect(gain);gain.connect(ctx.destination);
+  osc.start(start);osc.stop(start+dur+0.05);
+}
+function bellNote(ctx,vol,start){
+  var freqs=[587,1175,1408,1761];
+  for(var i=0;i<freqs.length;i++){
+    var osc=ctx.createOscillator();var gain=ctx.createGain();
+    osc.type='sine';osc.frequency.setValueAtTime(freqs[i],start);
+    var peak=vol*(1/(i+1));
+    gain.gain.setValueAtTime(0.0001,start);
+    gain.gain.exponentialRampToValueAtTime(peak,start+0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001,start+1.2);
+    osc.connect(gain);gain.connect(ctx.destination);
+    osc.start(start);osc.stop(start+1.3);
+  }
+}
+function startAlarmSound(sound,volume){
+  var ctx=createCtx();if(ctx.state==='suspended')ctx.resume();
+  var vol=Math.max(0.001,Math.min(1,volume));
+  var intervalId=null;var elapsedLoops=0;
+  function schedule(){
+    var now=ctx.currentTime;
+    if(sound==='high'){beep(ctx,1000,vol,now,0.15,'sine');beep(ctx,1000,vol,now+0.25,0.15,'sine')}
+    else if(sound==='annoying'){beep(ctx,800,vol,now,0.1,'square');beep(ctx,1200,vol,now+0.15,0.1,'square');beep(ctx,800,vol,now+0.3,0.1,'square');beep(ctx,1200,vol,now+0.45,0.1,'square')}
+    else if(sound==='gradual'){var rv=Math.min(vol,vol*(0.15+elapsedLoops*0.12));beep(ctx,523,rv,now,0.4,'sine');beep(ctx,784.5,rv*0.7,now+0.5,0.4,'sine');elapsedLoops++}
+    else if(sound==='bell'){bellNote(ctx,vol,now)}
+  }
+  var intervals={high:700,annoying:650,gradual:1100,bell:1500};
+  schedule();intervalId=setInterval(schedule,intervals[sound]);
+  return function(){
+    if(intervalId!==null)clearInterval(intervalId);intervalId=null;
+    setTimeout(function(){try{ctx.close()}catch(e){}},200);
+  };
+}
+function previewSound(sound,volume){
+  var ctx=createCtx();if(ctx.state==='suspended')ctx.resume();
+  var vol=Math.max(0.001,Math.min(1,volume));var now=ctx.currentTime;
+  if(sound==='high'){beep(ctx,1000,vol,now,0.15,'sine');beep(ctx,1000,vol,now+0.25,0.15,'sine');beep(ctx,1000,vol,now+0.5,0.15,'sine')}
+  else if(sound==='annoying'){beep(ctx,800,vol,now,0.1,'square');beep(ctx,1200,vol,now+0.15,0.1,'square');beep(ctx,800,vol,now+0.3,0.1,'square');beep(ctx,1200,vol,now+0.45,0.1,'square')}
+  else if(sound==='gradual'){beep(ctx,523,vol*0.5,now,0.4,'sine');beep(ctx,784,vol*0.7,now+0.5,0.4,'sine');beep(ctx,523,vol,now+1.0,0.4,'sine')}
+  else if(sound==='bell'){bellNote(ctx,vol,now);bellNote(ctx,vol*0.7,now+0.75)}
+  return function(){setTimeout(function(){try{ctx.close()}catch(e){}},100)};
+}
+
+/* ===== localStorage History ===== */
+function loadHistory(){
+  try{var d=JSON.parse(localStorage.getItem('sleep_sessions')||'[]');return d.slice(0,5)}catch(e){return[]}
+}
+function saveSession(session){
+  var list=[];
+  try{list=JSON.parse(localStorage.getItem('sleep_sessions')||'[]')}catch(e){list=[]}
+  list.unshift(session);
+  list=list.slice(0,20);
+  localStorage.setItem('sleep_sessions',JSON.stringify(list));
+}
+function updateSession(id,updates){
+  var list=[];
+  try{list=JSON.parse(localStorage.getItem('sleep_sessions')||'[]')}catch(e){list=[]}
+  for(var i=0;i<list.length;i++){if(list[i].id===id){for(var k in updates)list[i][k]=updates[k];break}}
+  localStorage.setItem('sleep_sessions',JSON.stringify(list));
+}
+
+/* ===== State ===== */
+var state = {
+  wakeTime:'08:30',
+  now:new Date(),
+  phase:'setup',
+  firstAlarmAt:null,
+  finalAlarmAt:null,
+  selectedCycles:0,
+  sessionId:null,
+  history:loadHistory(),
+  error:null,
+  sound:'high',
+  volume:0.8,
+  dropdownOpen:false,
+  previewing:false,
+  countdownToFirst:0,
+  countdownToFinal:0
+};
+var stopSoundFn=null;
+var stopPreviewFn=null;
+var alarmIntervalId=null;
+var firedFirst=false;
+var firedFinal=false;
+
+/* ===== Render ===== */
+var root=document.getElementById('root');
+
+function render(){
+  // update countdowns
+  state.countdownToFirst = state.firstAlarmAt ? state.firstAlarmAt.getTime()-state.now.getTime() : 0;
+  state.countdownToFinal = state.finalAlarmAt ? state.finalAlarmAt.getTime()-state.now.getTime() : 0;
+
+  var html='';
+  html+='<div class="starfield" id="starfield"><div class="bg"></div><div class="nebula1"></div><div class="nebula2"></div></div>';
+  html+='<div class="app">';
+  // header
+  html+='<header class="header"><div class="header-left"><div class="moon-icon">'+ICONS.moon+'</div><div><h1>منبه دورات النوم</h1><p>نَم بذكاء، استيقظ بنشاط</p></div></div>';
+  html+='<div class="header-right"><span class="clock-time">'+formatTimeAr(state.now)+'</span><span class="clock-date">'+state.now.toLocaleDateString('ar-EG',{weekday:'long',day:'numeric',month:'long'})+'</span></div></header>';
+
+  if(state.error){
+    html+='<div class="error-box">'+state.error+'</div>';
+  }
+
+  html+='<main class="main">';
+
+  if(state.phase==='setup'){
+    html+=renderSetup();
+  } else if(state.phase==='armed'){
+    html+=renderArmed();
+  } else if(state.phase==='ringing'){
+    html+=renderRinging('حان وقت النوم','المنبه الأول — ابدأ نومك الآن',ICONS.bellRing,'handleDismissFirst()');
+  } else if(state.phase==='slept'){
+    html+=renderSleeping();
+  } else if(state.phase==='final-ringing'){
+    html+=renderRinging('موعد الاستيقاظ','اكتملت دورة نوم سليمة — استيقظ بنشاط',ICONS.sunrise,'handleDismissFinal()');
+  } else if(state.phase==='done'){
+    html+=renderDone();
+  }
+
+  html+='</main>';
+
+  // history
+  if(state.history.length>0 && state.phase==='setup'){
+    html+='<section class="history-section"><h2 class="history-title">'+ICONS.clock+' آخر الجلسات</h2><div class="history-list">';
+    state.history.forEach(function(s){
+      html+='<div class="history-item"><div class="history-left"><div class="history-icon">'+ICONS.moon+'</div><div><p class="history-time">استيقاظ '+formatTimeAr(new Date(s.final_wake))+'</p><p class="history-meta">'+s.cycles+' دورات · '+formatDuration(s.duration_min)+'</p></div></div>';
+      if(s.completed){
+        html+='<span class="history-badge done">'+ICONS.checkCircle+' مكتملة</span>';
+      } else {
+        html+='<span class="history-badge pending">قيد التتبع</span>';
+      }
+      html+='</div>';
+    });
+    html+='</div></section>';
+  }
+
+  html+='<footer class="footer">كل دورة نوم = '+CYCLE_MINUTES+' دقيقة · صُمّم لنوم أعمق وأصحّ</footer>';
+  html+='</div>';
+
+  root.innerHTML=html;
+  generateStars();
+  attachListeners();
+}
+
+function generateStars(){
+  var sf=document.getElementById('starfield');
+  if(!sf)return;
+  // remove existing stars
+  var existing=sf.querySelectorAll('.star');
+  existing.forEach(function(s){s.remove()});
+  for(var i=0;i<60;i++){
+    var star=document.createElement('span');
+    star.className='star';
+    star.style.top=Math.random()*100+'%';
+    star.style.left=Math.random()*100+'%';
+    var sz=Math.random()*2+1;
+    star.style.width=sz+'px';
+    star.style.height=sz+'px';
+    star.style.animationDelay=Math.random()*3+'s';
+    star.style.animationDuration=(2+Math.random()*3)+'s';
+    sf.appendChild(star);
+  }
+}
+
+function renderSetup(){
+  var now=state.now;
+  var cycleOpts=computeCycles(state.wakeTime,now);
+  var nearest=nearestUpcoming(cycleOpts,now);
+  if(nearest && state.selectedCycles===0)state.selectedCycles=nearest.cycles;
+  var selectedOpt=null;
+  for(var i=0;i<cycleOpts.length;i++){if(cycleOpts[i].cycles===state.selectedCycles){selectedOpt=cycleOpts[i];break}}
+  if(!selectedOpt)selectedOpt=nearest;
+
+  var h='';
+  // wake time picker
+  h+='<div class="card card-glow"><label class="label">'+ICONS.sunrise+' موعد الاستيقاظ النهائي</label>';
+  h+='<input type="time" value="'+state.wakeTime+'" id="wakeTimeInput" class="time-input" />';
+  h+='<p class="hint">سيتم حساب أوقات النوم المثالية للخلف من هذا الموعد بدورات مدتها 90 دقيقة.</p></div>';
+
+  // sound settings
+  h+=renderSoundSettings();
+
+  // cycle options
+  h+='<div><h2 class="section-title">'+ICONS.sparkles+' أوقات بداية النوم المقترحة</h2>';
+  h+='<div class="cycle-grid">';
+  cycleOpts.forEach(function(opt){
+    var isN=nearest&&nearest.cycles===opt.cycles;
+    var isS=state.selectedCycles===opt.cycles;
+    h+='<button class="cycle-btn'+(isS?' selected':'')+(isN?' nearest':'')+'" data-cycles="'+opt.cycles+'">';
+    if(isN)h+='<span class="nearest-badge">الأقرب</span>';
+    h+='<div class="cycle-time">'+ICONS.bed+'<span class="time">'+formatTimeAr(opt.bedtime)+'</span></div>';
+    h+='<div class="cycle-meta"><span>'+opt.cycles+' دورات</span><span>'+formatDuration(opt.durationMin)+'</span></div>';
+    h+='</button>';
+  });
+  h+='</div></div>';
+
+  // summary + arm
+  if(selectedOpt){
+    h+='<div class="card"><div class="summary-row">';
+    h+='<div class="summary-item">'+ICONS.moon+'<span>النوم في</span><span class="val">'+formatTimeAr(selectedOpt.bedtime)+'</span></div>';
+    h+='<div class="summary-item">'+ICONS.sunrise+'<span>الاستيقاظ في</span><span class="val">'+formatTimeAr(selectedOpt.wakeTime)+'</span></div>';
+    h+='</div><button class="btn-arm" id="armBtn">'+ICONS.alarmClock+' تفعيل المنبه</button></div>';
+  }
+  return h;
+}
+
+function renderSoundSettings(){
+  var selected=ALARM_SOUNDS.filter(function(s){return s.id===state.sound})[0];
+  var volPct=Math.round(state.volume*100);
+  var h='';
+  h+='<div class="settings-card"><div class="settings-title">'+ICONS.music+' إعدادات نغمة المنبه</div>';
+  h+='<label class="settings-label">نوع النغمة</label>';
+  h+='<div class="dropdown">';
+  h+='<button class="dropdown-btn" id="dropdownBtn">'+selected.label+'<span class="'+(state.dropdownOpen?'open':'')+'">'+ICONS.chevronDown+'</span></button>';
+  if(state.dropdownOpen){
+    h+='<div class="dropdown-overlay" id="dropdownOverlay"></div>';
+    h+='<div class="dropdown-menu">';
+    ALARM_SOUNDS.forEach(function(s){
+      h+='<button class="dropdown-item'+(s.id===state.sound?' active':'')+'" data-sound="'+s.id+'"><span class="item-label">'+s.label+'</span><span class="item-desc">'+s.description+'</span></button>';
+    });
+    h+='</div>';
+  }
+  h+='</div>';
+  h+='<button class="btn-preview'+(state.previewing?' playing':'')+'" id="previewBtn">'+(state.previewing?ICONS.square+' إيقاف المعاينة':ICONS.play+' تجربة الصوت')+'</button>';
+  h+='<div class="volume-row"><span>'+(volPct>=66?ICONS.volume2:ICONS.volume1)+' مستوى الصوت</span><span class="volume-pct">'+volPct+'%</span></div>';
+  h+='<input type="range" min="0" max="100" value="'+volPct+'" id="volumeSlider" class="volume-slider" />';
+  h+='<div class="volume-range-labels"><span>صامت</span><span>أعلى حد</span></div>';
+  h+='</div>';
+  return h;
+}
+
+function renderArmed(){
+  var h='';
+  h+='<div class="pulse-wrap"><span class="pulse-ring"></span><span class="pulse-ring delay"></span><div class="pulse-core">'+ICONS.bell+'</div></div>';
+  h+='<div><p class="countdown-label">المنبه الأول يرن بعد</p><p class="countdown">'+formatCountdown(state.countdownToFirst)+'</p></div>';
+  h+='<div class="info-grid">';
+  h+='<div class="info-tile"><div class="info-icon">'+ICONS.bed+'</div><div><p class="info-label">وقت النوم</p><p class="info-value">'+formatTimeAr(state.firstAlarmAt)+'</p></div></div>';
+  h+='<div class="info-tile"><div class="info-icon">'+ICONS.sunrise+'</div><div><p class="info-label">وقت الاستيقاظ</p><p class="info-value">'+formatTimeAr(state.finalAlarmAt)+'</p></div></div>';
+  h+='</div>';
+  var selOpt=getSelectedOpt();
+  var cycles=selOpt?selOpt.cycles:0;
+  h+='<div class="status-bar">'+ICONS.star+' '+cycles+' دورات نوم مكتملة · '+formatDuration(cycles*CYCLE_MINUTES)+'</div>';
+  h+='<button class="btn-cancel" onclick="window._app.handleReset()">'+ICONS.rotateCcw+' إلغاء</button>';
+  return h;
+}
+
+function renderRinging(title,sub,icon,dismissFn){
+  var h='';
+  h+='<div class="ringing">';
+  h+='<div class="pulse-wrap pulse-wrap-gold"><span class="pulse-ring pulse-ring-gold"></span><span class="pulse-ring pulse-ring-gold delay"></span><div class="pulse-core pulse-core-gold">'+icon+'</div></div>';
+  h+='<div><h2 class="ringing-title">'+title+'</h2><p class="ringing-sub">'+sub+'</p></div>';
+  h+='<button class="btn-gold" onclick="window._app.'+dismissFn+'">إيقاف المنبه</button>';
+  h+='</div>';
+  return h;
+}
+
+function renderSleeping(){
+  var h='';
+  h+='<div class="sleeping">';
+  h+='<div class="moon-big">'+ICONS.moon+'</div>';
+  h+='<div><h2 class="sleeping-title">نوم هانئ…</h2><p class="sleeping-sub">تم تسجيل بدء النوم. المنبه النهائي مضبوط على</p><p class="sleeping-wake">'+formatTimeAr(state.finalAlarmAt)+'</p></div>';
+  h+='<div class="sleeping-countdown-card"><p class="countdown-label">الاستيقاظ بعد</p><p class="countdown">'+formatCountdown(state.countdownToFinal)+'</p></div>';
+  h+='<button class="btn-cancel" onclick="window._app.handleReset()">'+ICONS.rotateCcw+' إلغاء</button>';
+  h+='</div>';
+  return h;
+}
+
+function renderDone(){
+  var selOpt=getSelectedOpt();
+  var cycles=selOpt?selOpt.cycles:0;
+  var dur=selOpt?formatDuration(selOpt.durationMin):'';
+  var h='';
+  h+='<div class="done-view">';
+  h+='<div class="done-icon">'+ICONS.checkCircle+'</div>';
+  h+='<div><h2 class="done-title">صباح الخير!</h2><p class="done-sub">أكملت '+cycles+' دورات نوم · '+dur+'</p><p class="done-accent">نوم سليم يبدأ بدورة مكتملة</p></div>';
+  h+='<button class="btn-reset" onclick="window._app.handleReset()">'+ICONS.rotateCcw+' جلسة نوم جديدة</button>';
+  h+='</div>';
+  return h;
+}
+
+function getSelectedOpt(){
+  var opts=computeCycles(state.wakeTime,state.now);
+  for(var i=0;i<opts.length;i++){if(opts[i].cycles===state.selectedCycles)return opts[i]}
+  var n=nearestUpcoming(opts,state.now);
+  return n;
+}
+
+/* ===== Event Listeners ===== */
+function attachListeners(){
+  var wt=document.getElementById('wakeTimeInput');
+  if(wt){wt.addEventListener('change',function(e){
+    state.wakeTime=e.target.value;
+    state.selectedCycles=0;
+    render();
+  })}
+
+  var cycleBtns=document.querySelectorAll('.cycle-btn');
+  cycleBtns.forEach(function(btn){
+    btn.addEventListener('click',function(){
+      state.selectedCycles=parseInt(btn.dataset.cycles);
+      render();
+    });
+  });
+
+  var armBtn=document.getElementById('armBtn');
+  if(armBtn)armBtn.addEventListener('click',handleArm);
+
+  var ddBtn=document.getElementById('dropdownBtn');
+  if(ddBtn)ddBtn.addEventListener('click',function(){
+    state.dropdownOpen=!state.dropdownOpen;
+    render();
+  });
+
+  var ddOverlay=document.getElementById('dropdownOverlay');
+  if(ddOverlay)ddOverlay.addEventListener('click',function(){
+    state.dropdownOpen=false;
+    render();
+  });
+
+  var ddItems=document.querySelectorAll('.dropdown-item');
+  ddItems.forEach(function(btn){
+    btn.addEventListener('click',function(){
+      state.sound=btn.dataset.sound;
+      state.dropdownOpen=false;
+      if(state.previewing)stopPreview();
+      render();
+    });
+  });
+
+  var previewBtn=document.getElementById('previewBtn');
+  if(previewBtn)previewBtn.addEventListener('click',handlePreview);
+
+  var volSlider=document.getElementById('volumeSlider');
+  if(volSlider)volSlider.addEventListener('input',function(e){
+    state.volume=parseInt(e.target.value)/100;
+    render();
+  });
+}
+
+/* ===== Actions ===== */
+function handleArm(){
+  var selOpt=getSelectedOpt();
+  if(!selOpt)return;
+  state.firstAlarmAt=selOpt.bedtime;
+  state.finalAlarmAt=selOpt.wakeTime;
+  state.phase='armed';
+  firedFirst=false;
+  firedFinal=false;
+  startAlarmTick();
+
+  var session={
+    id:Date.now().toString(36)+Math.random().toString(36).substr(2,5),
+    wake_time:state.wakeTime,
+    bedtime:selOpt.bedtime.toISOString(),
+    final_wake:selOpt.wakeTime.toISOString(),
+    cycles:selOpt.cycles,
+    duration_min:selOpt.durationMin,
+    completed:false,
+    created_at:new Date().toISOString()
+  };
+  saveSession(session);
+  state.sessionId=session.id;
+  state.history=loadHistory();
+  render();
+}
+
+function handleDismissFirst(){
+  stopAlarmSound();
+  state.phase='slept';
+  if(state.sessionId){
+    updateSession(state.sessionId,{bedtime:new Date().toISOString()});
+  }
+  render();
+}
+
+function handleDismissFinal(){
+  stopAlarmSound();
+  state.phase='done';
+  if(state.sessionId){
+    updateSession(state.sessionId,{completed:true});
+    state.history=loadHistory();
+  }
+  render();
+}
+
+function handleReset(){
+  stopAlarmSound();
+  stopAlarmTick();
+  state.phase='setup';
+  state.firstAlarmAt=null;
+  state.finalAlarmAt=null;
+  state.sessionId=null;
+  state.selectedCycles=0;
+  firedFirst=false;
+  firedFinal=false;
+  render();
+}
+
+function handlePreview(){
+  if(state.previewing){
+    stopPreview();
+    return;
+  }
+  stopPreviewFn=previewSound(state.sound,state.volume);
+  state.previewing=true;
+  render();
+  setTimeout(function(){
+    stopPreview();
+  },1600);
+}
+
+function stopPreview(){
+  if(stopPreviewFn){stopPreviewFn();stopPreviewFn=null}
+  state.previewing=false;
+  render();
+}
+
+/* ===== Alarm Tick ===== */
+function startAlarmTick(){
+  stopAlarmTick();
+  alarmIntervalId=setInterval(function(){
+    state.now=new Date();
+    var t=state.now.getTime();
+
+    if(state.phase==='armed' && state.firstAlarmAt && !firedFirst && t>=state.firstAlarmAt.getTime()){
+      firedFirst=true;
+      state.phase='ringing';
+      startAlarmSoundLoop();
+      render();
+    }
+
+    if(state.phase==='slept' && state.finalAlarmAt && !firedFinal && t>=state.finalAlarmAt.getTime()){
+      firedFinal=true;
+      state.phase='final-ringing';
+      startAlarmSoundLoop();
+      render();
+    }
+  },250);
+}
+
+function stopAlarmTick(){
+  if(alarmIntervalId){clearInterval(alarmIntervalId);alarmIntervalId=null}
+}
+
+function startAlarmSoundLoop(){
+  stopAlarmSound();
+  stopSoundFn=startAlarmSound(state.sound,state.volume);
+}
+
+function stopAlarmSound(){
+  if(stopSoundFn){stopSoundFn();stopSoundFn=null}
+}
+
+/* ===== Live Clock ===== */
+setInterval(function(){
+  state.now=new Date();
+  // only re-render the header clock during setup to avoid disrupting other phases
+  if(state.phase==='setup'||state.phase==='armed'||state.phase==='slept'){
+    var ct=document.querySelector('.clock-time');
+    if(ct)ct.textContent=formatTimeAr(state.now);
+    var cd=document.querySelector('.clock-date');
+    if(cd)cd.textContent=state.now.toLocaleDateString('ar-EG',{weekday:'long',day:'numeric',month:'long'});
+
+    // update countdown displays
+    if(state.phase==='armed'){
+      var cd1=document.querySelector('.countdown');
+      if(cd1){state.countdownToFirst=state.firstAlarmAt?state.firstAlarmAt.getTime()-state.now.getTime():0;cd1.textContent=formatCountdown(state.countdownToFirst)}
+    }
+    if(state.phase==='slept'){
+      var cd2=document.querySelector('.countdown');
+      if(cd2){state.countdownToFinal=state.finalAlarmAt?state.finalAlarmAt.getTime()-state.now.getTime():0;cd2.textContent=formatCountdown(state.countdownToFinal)}
+    }
+  }
+},1000);
+
+/* ===== Init ===== */
+window._app={handleReset:handleReset,handleDismissFirst:handleDismissFirst,handleDismissFinal:handleDismissFinal};
+render();
+
+})();
+</script>
+</body>
+</html>

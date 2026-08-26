@@ -1,0 +1,54 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Extract project
+        run: |
+          rm -rf project
+          mkdir project
+          unzip -q Sleep-Cycle-Alarm-GitHub-Ready.zip -d project
+          test -f project/package.json
+          test -d project/android
+
+      - name: Install dependencies
+        working-directory: project
+        run: npm install --no-audit --no-fund
+
+      - name: Build web app and sync Android
+        working-directory: project
+        run: npm run android:sync
+
+      - name: Build debug APK
+        working-directory: project/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: sleep-alarm-debug-apk
+          path: project/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error

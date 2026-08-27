@@ -17,6 +17,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -24,10 +25,26 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Check project
+      - name: Extract project folders
         run: |
+          rm -rf .extract
+          mkdir -p .extract
+
+          unzip -q android.zip -d .extract/android
+          unzip -q src.zip -d .extract/src
+          unzip -q supabase.zip -d .extract/supabase
+
+          mkdir -p android src supabase
+
+          cp -a .extract/android/android/. android/
+          cp -a .extract/src/src/. src/
+          cp -a .extract/supabase/supabase/. supabase/
+
           test -f package.json
           test -d android
+          test -f android/gradlew
+          test -d src
+          test -d supabase
 
       - name: Install dependencies
         run: npm install --no-audit --no-fund
